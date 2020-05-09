@@ -1,0 +1,279 @@
+---
+title: "USAID DC"
+author: "Deon, Akua, Gerardo, Sam"
+date: "4/20/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#install needed packages (only run this once)
+#install.packages('tm')
+#install.packages('tidytext')
+#install.packages('tidyr')
+#install.packages('dplyr')
+#install.packages('NLP')
+#install.packages('ggplot2')
+#install.packages('wordcloud')
+#install.packages('topicmodels')
+#install.packages('quanteda')
+#install.packages('tm')
+#install.packages('SnowballC')
+#install.packages('corpus')
+#install.packages('textdata')
+```
+
+```{r}
+#Library the packages
+library(tm)
+library(tidytext)
+library(tidyr)
+library(dplyr)
+library(NLP)
+library(ggplot2)
+library(wordcloud)
+library(topicmodels)
+library(quanteda)
+library(SnowballC)
+library(corpus)
+```
+
+```{r}
+#Running the Jaccard Index
+setwd("~/Desktop/USAID Final Project")
+data <- Corpus(DirSource("DCTxtfiles"))
+
+dfmat <- dfm(corpus_subset(corpus(data)),
+remove_punct = TRUE, remove = stopwords("english"))
+(tstat1 <- textstat_simil(dfmat, method = "jaccard", margin = "documents"))
+```
+
+```{r}
+#Run the Text Analysis
+library(tidytext, pos=15)
+library(SnowballC)
+library(tm, pos=16)
+library(ggplot2)
+
+library(NLP, pos=16)
+library(tm, pos=16)
+library(dplyr)
+
+library(textdata)
+library(topicmodels)
+library(tidyr)
+library(tm)
+library(SnowballC)
+b <- Corpus(DirSource("DCTxtfiles"))
+b <- tm_map(b, stripWhitespace)
+b <- tm_map(b, removeNumbers)
+b <- tm_map(b, removePunctuation)
+b <- tm_map(b,content_transformer(tolower))
+b<- tm_map(b, removeWords, c(stopwords("english"),"]-"))
+
+dtmc<- DocumentTermMatrix(b)
+dtmc
+
+termsc <- Terms(dtmc)
+head(terms)
+
+library(tidytext)
+library(dplyr)
+dtm_tdc <- tidy(dtmc)
+dtm_tdc
+
+# rename the "term" column to "word"
+colnames(dtm_tdc) <- c("document", "word", "count")
+library(textdata)
+sent <- get_sentiments("nrc")
+nrc_word_countsc <- dtm_tdc %>% inner_join(sent, by="word") %>% count(word,sentiment, sort=TRUE) %>% ungroup()
+nrc_word_countsc
+
+library(ggplot2)
+nrc_word_countsc %>%
+filter(n > 3) %>%
+mutate(n = ifelse(sentiment == "negative", -n, n)) %>%
+mutate(word = reorder(word, n)) %>%
+ggplot(aes(word, n, fill = sentiment)) +
+geom_bar(stat = "identity") +
+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylab("Contribution to sentiment")
+
+
+library(tidytext)
+library(topicmodels)
+dtm_ldac <- LDA(dtmc, k = 2, control = list(seed = 1234))
+dtm_topicsc <- tidy(dtm_ldac, matrix = "beta")
+library(ggplot2)
+library(dplyr)
+dtm_top_termsc <- dtm_topicsc %>%
+  group_by(topic) %>%
+top_n(10, beta) %>%
+ungroup() %>%
+arrange(topic, -beta)
+library(NLP, pos=15)
+library(tidytext, pos=18)
+library(ggplot2, pos=20)
+library(tidyr)
+beta_spreadc <- dtm_topicsc %>%
+mutate(topic = paste0("topic", topic)) %>%
+spread(topic, beta) %>%
+filter(topic1 > .001 | topic2 > .001) %>%
+mutate(log_ratio = log2(topic2 / topic1))
+library(ggplot2)
+theme_set(theme_bw())
+dtm_top_termsc %>%
+mutate(termc = reorder(term, beta)) %>%
+ggplot(aes(termc, beta)) +
+geom_bar(stat = "identity") +
+facet_wrap(~ topic, scales = "free") +
+theme(axis.text.x = element_text(size = 15, angle = 90, hjust = 1))
+
+```
+
+```{r}
+#Create and Clean Corpus
+setwd("~/Desktop/USAID Final Project")
+Combined_corpus <- Corpus(DirSource("DCTxtfiles"))
+Combined_corpus <- tm_map(Combined_corpus, removePunctuation)
+Combined_corpus <- tm_map(Combined_corpus, tolower)
+Combined_corpus <- tm_map(Combined_corpus, removeWords, stopwords("english"))
+
+```
+
+```{r}
+#Run LDA analysis to determine the topics
+Combined_df <- DocumentTermMatrix(Combined_corpus)
+Combined_lda <- LDA(Combined_df, k = 3, control = list(seed = 1234))
+Combined_topics <- tidy(Combined_lda, matrix = "beta")
+Combined_top_terms <- Combined_topics %>% group_by(topic) %>% top_n(10, beta) %>%arrange(topic, -beta)
+
+#Display the topic model using ggplot
+Combined_top_terms %>% mutate(term = reorder(term, beta)) %>% ggplot(aes(term, beta, fill= factor(topic))) + geom_col(show.legend = FALSE) + facet_wrap(~topic, scales = "free") +coord_flip()
+```
+
+
+```{r}
+#read text from each publication articles(in a .text file)
+setwd("~/Desktop/USAID Final Project/DCTxtfiles/")
+txt1 <- readLines("p1.txt")
+txt2 <- readLines("p2.txt")
+txt3 <- readLines("p3.txt")
+txt4 <- readLines("p4.txt")
+txt5 <- readLines("p5.txt")
+txt6 <- readLines("p6.txt")
+txt7 <- readLines("p7.txt")
+txt8 <- readLines("p8.txt")
+txt9 <- readLines("p9.txt")
+txt10 <- readLines("p10.txt")
+txt11 <- readLines("p11.txt")
+txt12 <- readLines("p12.txt")
+txt13 <- readLines("p13.txt")
+txt14 <- readLines("p14.txt")
+txt15 <- readLines("p15.txt")
+txt16 <- readLines("p16.txt")
+txt17 <- readLines("p17.txt")
+txt18 <- readLines("p18.txt")
+txt19 <- readLines("p19.txt")
+txt20 <- readLines("p20.txt")
+txt21 <- readLines("p21.txt")
+txt22 <- readLines("p22.txt")
+txt23 <- readLines("p23.txt")
+txt24 <- readLines("p24.txt")
+txt25 <- readLines("p25.txt")
+txt26 <- readLines("p26.txt")
+txt27 <- readLines("p27.txt")
+txt28 <- readLines("p28.txt")
+txt29 <- readLines("p29.txt")
+txt30 <- readLines("p30.txt")
+
+
+
+
+
+```
+
+```{r eval=FALSE, include=FALSE}
+#Create Tibble Series #A
+titles <- c("Africa and a Politics of Possibility", "Africa’s fast-growing array of choices in outmost partners is lifting a awaiting of a 21st century hasten for Africa — a modern-day foe to secure privileged, if not exclusive, entrance to a continent’s economic, confidence and domestic resources and resources", "Last week, Ivanka Trump, the first daughter of the United States and adviser to the president made a four-day trip to Africa, first landing in the East African nation of Ethiopia, then flying 2,942 miles west to Côte d'Ivoire","The June 10 opinion article by a Daniel Runde titled “The US should ask more of the African Development Bank before considering a capital increase” betrays a lack of understanding of the work of the African Development Bank and its impact on the African continent","Fourteen months ago, John Bolton—then inhabitant confidence adviser—rolled out a Trump Africa policy. In Bolton’s view, that still guides a administration’s proceed toward a region, a tip priority for a U.S. in Africa is a great power competition. As he put it, China and Russia are deliberately and aggressively targeting their investments in a segment to gain a rival advantage over a United States.","A Loveland proprietor is streamer adult a OFDA response to Ebola in Africa.(Photo: USAID)
+KUSA – More than 6,000 miles from Colorado, Ebola is distracted in several countries in Africa","a arise of Cyclone Idai, Mozambique and many of southern Africa is grappling with widespread flooding, infrastructure damage, food insecurity, and inner displacement. The ascent predicament has been worsened by slow floodwaters, that bluster epidemics of cholera or other diseases. Such a one-two punch could turn increasingly common as meridian change intensifies storms in a exposed region.","The deadly Ebola outbreak in Congo is now an international health emergency, the World Health Organization announced Wednesday after a case was confirmed in a city of 2 million people .","Fourteen years ago, Mustefa Hafiz and 1,300 farmers in his village in Ethiopia could barely grow enough food to feed their families. Today, Mustefa harvests over 30,000 pounds of potatoes and other crops each year. He also earns $9,700 in annual profit, enough to enroll his daughters in school and build a house equipped with a water pump and modern outhouse.","Dire Dawa, Ethiopia - Millions of people in a Horn of Africa are pang from a enlarged drought that is coinciding with a United States‘s offer to condense appropriation for lifesaving food aid.","The U.S. Treasury recently decided to level sanctions against the Lebanon-based Jammal Trust Bank for supporting Hezbollah’s illicit financial and banking activities. This led almost immediately to the bank’s collapse, showing just how much of an effect targeted sanctions can have.","What do India, Turkey, Japan, China, and a European Union have in common with Africa that a United States does not? Each nation and a EU have hold dual or some-more summits with African heads of state. While there were certain aspects in a Trump administration’s Africa plan that was expelled late final year, there was no plead of a U.S.-Africa summit. Does this matter?", "Far from the din of Washington, Ivanka Trump toured businesses run by women in Ethiopia on Sunday while promoting a White House global economic program for women.", "Less than a year after giving birth to twin boys, Melanie Atieno’s health worker delivered troubling news: both of Melanie’s sons were malnourished. Melanie felt frustrated. She did not know how to get her sons the nutrients they needed to thrive, and she was not alone – even when many mothers in the developing world have enough food for their children, the traditional diet lacks important nutrients like Vitamin D and iron. In Kenya, where Melanie and her family live, over one-quarter of all children under five are stunted, a sign of chronic malnutrition.","First lady Melania Trump visited a school in Malawi that has struggled with its student-teacher ratio and donated more than 1.4 million textbooks Thursday.","First ladyMelania Trump was greeted by demonstrators holding sings referencing her husband's past remarks upon landing in Malawi on Thursday morning.","This has been an amazing month in the search for innovations to fight some of the biggest infectious disease threats of our time. The U.S. Food and Drug Administration (FDA) recently approved a new drug for treating highly drug-resistant forms of tuberculosis (TB), the world’s most deadly infectious disease. Meanwhile, from the Democratic Republic of the Congo (DRC) comes news that two experimental Ebola drugs are dramatically improving the survival rate of infected patients.","Now is the time to reform US humanitarian assistance, refugee response","PAE acquires international disaster response contractor","Reason for optimism in Trump's Prosper Africa policy","Secretary of State Pompeo Completes Trip to Africa ","Thirty-seven immature women from opposite Africa connoisseur from Women in African Power Program","Trump to help impoverished nations educate their children","Trump's purported “shithole” comments come behind to haunt Melania during Africa visit","Uganda confirms Ebola case as virus jumps border","US should take pride in the lifesaving role our foreign aid has provided","USAID director Green visits Darfur as U.S. considers lifting sanctions on Sudan","WHO says Ebola is global emergency","WHO warns it's running out of money to fight Ebola")
+
+```
+
+```{r}
+
+titles <- c("Washington Post", "Washington Examiner", "Wshington Examiner", "the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill","the hill", "Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today","Report News Today", "Washington Business Journal", "Report News Today")#, #"NBC Washington", "NBC Washington" )
+books <- list(txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8, txt9, txt10, txt11, txt12, txt13, txt14, txt15, txt16, txt17, txt18, txt19, txt20, txt21, txt22, txt23, txt24, txt25, txt26, txt27, txt28, txt29, txt30) 
+
+series <- tibble()
+
+```
+
+```{r}
+
+#Sentiment Analysis
+for( i in seq_along(titles)) {
+  clean <- tibble(chapter = seq_along(books[i]),
+  text = books[[i]]) %>%
+    unnest_tokens(word, text) %>%
+    mutate(book = titles[i]) %>%
+    select(book, everything())
+  series <-rbind(series, clean)
+}
+
+series$book <- factor(series$book, levels = rev(unique(titles)))
+```
+
+```{r} 
+series %>% 
+  group_by(book) %>%
+  mutate(word_count = 1:n(), 
+         index = word_count %/% 500+ 1) %>% 
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = index , sentiment)%>%
+  ungroup() %>% spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative,book = factor(book, levels = unique(titles))) %>%
+  ggplot(aes(index, sentiment, fill = book)) +geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) + facet_wrap(~ book, ncol = 2,scales = "free_x")
+```
+
+Everything below here is where the code stops working, I commented it out so that it would not run.
+```{r eval=FALSE, include=FALSE}
+#Bigrams
+
+#Bigrams is not working
+for(i in seq_along(titles))
+  {
+  clean <- tibble(chapter = seq_along(books[[i]]),
+                  text = books[[i]]) %>%
+                    unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%                            
+                     mutate(book = titles[i]) %>% 
+                      select(book, everything())
+  series <- rbind(series, clean)
+    }
+  series$book <- factor(series$book, levels = rev(unique(titles)))
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+## Count the bigrams and display the most frequent bigrams for each publication using ggplot
+series %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>% 
+  filter(!word1 %in%stop_words$word, !word2 %in% stop_words$word) 
+%>% count(book, word1, word2, sort =TRUE) 
+%>% unite("bigram", c(word1, word2), sep = " ") %>% group_by(book) %>%top_n(10) %>% ungroup() %>% mutate(book = factor(book) %>% forcats::fct_rev()) %>%ggplot(aes(drlib::reorder_within(bigram, n, book), n, fill = book)) + geom_bar(stat = "identity",alpha = .8, show.legend = FALSE) + drlib::scale_x_reordered() + facet_wrap(~ book, ncol = 2,scales = "free") + coord_flip()
+
+```
+
+
+
